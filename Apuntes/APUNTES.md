@@ -213,7 +213,7 @@ Con esto el class-validator ya funcionará.
 Como opcional podemos también instalar con npm el siguiente paquete de NestJs:
 
 ```Bash
-npm i nestjs/mapped-types
+npm i @nestjs/mapped-types
 ```
 
 Esto nos ayudará a no repetir código cuando tengamos te tipar varios DTO parecidos.

@@ -18,11 +18,11 @@ export class ProductsService {
     },
   ];
 
-  getAll() {
+  findAll() {
     return this.products;
   }
 
-  getForId(id: number) {
+  findOne(id: number) {
     const product = this.products.find((item) => item.id === id);
     if (!product) {
       throw new NotFoundException(`Product #${id} not found`);

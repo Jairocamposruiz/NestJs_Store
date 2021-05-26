@@ -17,13 +17,13 @@ export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
 
   @Get()
-  getProducts() {
-    return this.productService.getAll();
+  findAll() {
+    return this.productService.findAll();
   }
 
   @Get('/:id')
-  getProductForId(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.getForId(id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.productService.findOne(id);
   }
 
   @Post()
