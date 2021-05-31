@@ -8,10 +8,12 @@ import {
   Post,
   Delete,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 import { UsersService } from '../services/users.service';
 import { CreateUserDto, UpdateUserDto } from '../dtos/user.dtos';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
@@ -26,6 +28,7 @@ export class UsersController {
     return this.userService.findOne(id);
   }
 
+  @ApiOperation({ summary: 'List Orders by User id' })
   @Get('/:id/orders')
   getOrders(@Param('id', ParseIntPipe) id: number) {
     return this.userService.getOrdersByUser(id);
