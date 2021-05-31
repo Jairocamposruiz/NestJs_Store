@@ -11,5 +11,6 @@ import { BrandService } from './services/brand.service';
 @Module({
   controllers: [ProductsController, CategoriesController, BrandController],
   providers: [ProductsService, BrandService, CategoryService],
+  exports: [ProductsService],
 })
 export class ProductsModule {}
