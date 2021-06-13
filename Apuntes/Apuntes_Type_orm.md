@@ -180,3 +180,154 @@ En este caso utilizaremos TypeORM para ello instalaremos:
 
 - `npm install --save typeorm` su nombre lo indica este es el motor typeorm
 - `npm install --save @nestjs/typeorm` este es propio de nest y sirve para integrar de una mejor manera typeorm a nest también lo hay en caso de que utilicemos sequelize, en caso de que utilicemos mongoDB tambien tiene uno para mongoose.
+
+La conexión a base de datos se quedaría de la siguiente manera dentro del database.module
+
+```TypeScript
+import { Module, Global } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import config from '../config';
+
+const API_KEY = '1234';
+const API_KEY_PROD = 'PROD1234';
+
+@Global()
+@Module({
+  imports: [
+    TypeOrmModule.forRootAsync({
+      inject: [config.KEY],
+      useFactory: (configService: ConfigType<typeof config>) => {
+        const { user, host, dbName, password, port } = configService.postgres;
+        return {
+          type: 'postgres',
+          host,
+          port,
+          username: user,
+          password,
+          database: dbName,
+        };
+      },
+    }),
+  ],
+  providers: [
+    {
+      provide: 'API_KEY',
+      useValue: process.env.NODE_ENV === 'prod' ? API_KEY : API_KEY_PROD,
+    },
+  ],
+  exports: ['API_KEY', TypeOrmModule],
+})
+export class DatabaseModule {}
+```
+
+Ahora con las entities que teníamos creadas las tendremos que modificar por medio de unos decoradores que le añadirán la funcionalidad de comunicarse con la base de datos.
+
+Ejemplo de un entity:
+
+```TypeScript
+import { PrimaryGeneratedColumn, Column, Entity } from 'typeorm';
+
+@Entity()
+export class Product {
+  @PrimaryGeneratedColumn() //Indica que es un ID autogenerado
+  id: number;
+
+  @Column({ type: 'varchar', length: 255, unique: true })
+  name: string;
+
+  @Column({ type: 'text' })
+  description: string;
+
+  @Column({ type: 'int' })
+  price: number;
+
+  @Column({ type: 'int' })
+  stock: number;
+
+  @Column({ type: 'varchar', length: 255 })
+  image: string;
+}
+```
+
+A la hora de tipar los campos hay que tener en cuenta que algunos tipos son expecífico de una vase de datos en particular y en caso de que se cambie a otra no nos funcionará por ello si queremos que se pueda cambiar entre bases de datos sin problema mejor usar tipos que sean coincidentes en todas.
+
+En el modulo se importaría de la siguiente manera:
+
+```TypeScript
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { ProductsController } from './controllers/products.controller';
+import { CategoriesController } from './controllers/categories.controller';
+import { BrandController } from './controllers/brand.controller';
+
+import { ProductsService } from './services/products.service';
+import { CategoryService } from './services/category.service';
+import { BrandService } from './services/brand.service';
+
+import { Product } from './entities/product.entity';
+import { Brand } from './entities/brand.entity';
+import { Category } from './entities/category.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Product, Brand, Category])],
+  controllers: [ProductsController, CategoriesController, BrandController],
+  providers: [ProductsService, BrandService, CategoryService],
+  exports: [ProductsService],
+})
+export class ProductsModule {}
+```
+
+Ejemplo de como quedaría un service:
+
+```TypeScript
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Product } from '../entities/product.entity';
+import { CreateProductDto, UpdateProductDto } from '../dtos/products.dtos';
+
+@Injectable()
+export class ProductsService {
+  constructor(
+    @InjectRepository(Product) private productRepo: Repository<Product>,
+  ) {}
+
+  findAll() {
+    return this.productRepo.find({});
+  }
+
+  async findOne(id: number) {
+    const product = await this.productRepo.findOne(id);
+    if (!product) {
+      throw new NotFoundException(`Product #${id} not found`);
+    }
+    return product;
+  }
+
+  create(payload: CreateProductDto) {
+    const newProduct = this.productRepo.create(payload); //Crea la instancia
+    return this.productRepo.save(newProduct); //Guarda en la base de datos
+  }
+
+  async update(id: number, payload: UpdateProductDto) {
+    const product = await this.productRepo.findOne(id);
+    if (!product) {
+      throw new NotFoundException(`Product #${id} not found`);
+    }
+    this.productRepo.merge(product, payload); //Coje el producto y le añade los cambios
+    return this.productRepo.save(product);
+  }
+
+  async delete(id: number) {
+    const product = await this.productRepo.findOne(id);
+    if (!product) {
+      throw new NotFoundException(`Product #${id} not found`);
+    }
+    return this.productRepo.delete(id);
+  }
+}
+```
