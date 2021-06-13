@@ -36,7 +36,7 @@ services:
     image: phpmyadmin/phpmyadmin
     environment:
       - MYSQL_ROOT_PASSWORD=123456
-      - PMA=mysql
+      - PMA_HOST=mysql
     ports:
       - "8080:80"
     depends_on:
