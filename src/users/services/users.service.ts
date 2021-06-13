@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Client } from 'pg';
 
 import { User } from '../entities/user.entity';
 import { Order } from '../entities/order.entity';
