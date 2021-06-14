@@ -22,8 +22,8 @@ const API_KEY_PROD = 'PROD1234';
           username: user,
           password,
           database: dbName,
-          synchronize: true, //Solo puede ser true durante el desarrollo esto lo que hace es que si no existe tabla la cree
-          autoLoadEntities: true, //Solo puede ser true durante el desarrollo esto lo que hace es que si no existe tabla la cree
+          synchronize: false, //Solo puede ser true durante el desarrollo esto lo que hace es que si no existe tabla la cree una vez implementadas las migraciones ya no se usa
+          autoLoadEntities: true,
         };
       },
     }),

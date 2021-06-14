@@ -14,21 +14,21 @@ export class BrandService {
   constructor(@InjectRepository(Brand) private brandRepo: Repository<Brand>) {}
 
   findAll() {
-    return this.brandRepo.find();
+    return this.brandRepo.find(/* { relations: ['products'] } */); //Solo en caso de que queramos que cuando se pidan todas las marcas tambien traigan todas los productos pero no es biable cuando crece mucho
   }
 
   async findOne(id: number) {
-    const brand = await this.brandRepo.findOne(id);
+    const brand = await this.brandRepo.findOne(id, { relations: ['products'] });
     if (!brand) {
       throw new NotFoundException(`Brand #${id} not found`);
     }
     return brand;
   }
 
-  create(payload: CreateBrandDto) {
+  async create(payload: CreateBrandDto) {
     const newBrand = this.brandRepo.create(payload);
     try {
-      this.brandRepo.save(newBrand);
+      await this.brandRepo.save(newBrand);
     } catch (err) {
       throw new BadRequestException(`Brand name exists`);
     }

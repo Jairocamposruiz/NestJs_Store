@@ -5,6 +5,9 @@ import { Product } from '../../products/entities/product.entity';
 
 @Entity()
 export class Order {
+  @PrimaryGeneratedColumn()
+  id: number;
+
   date: Date;
   user: User;
   products: Product[];

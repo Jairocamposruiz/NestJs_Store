@@ -6,6 +6,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { Category } from '../entities/category.entity';
+import { Brand } from '../entities/brand.entity';
 import { Product } from '../entities/product.entity';
 import { CreateProductDto, UpdateProductDto } from '../dtos/products.dtos';
 
@@ -13,14 +15,18 @@ import { CreateProductDto, UpdateProductDto } from '../dtos/products.dtos';
 export class ProductsService {
   constructor(
     @InjectRepository(Product) private productRepo: Repository<Product>,
+    @InjectRepository(Category) private categoryRepo: Repository<Category>,
+    @InjectRepository(Brand) private brandRepo: Repository<Brand>,
   ) {}
 
   findAll() {
-    return this.productRepo.find();
+    return this.productRepo.find({ relations: ['brand', 'categories'] });
   }
 
   async findOne(id: number) {
-    const product = await this.productRepo.findOne(id);
+    const product = await this.productRepo.findOne(id, {
+      relations: ['brand', 'categories'],
+    });
     if (!product) {
       throw new NotFoundException(`Product #${id} not found`);
     }
@@ -29,6 +35,16 @@ export class ProductsService {
 
   async create(payload: CreateProductDto) {
     const newProduct = this.productRepo.create(payload); //Crea la instancia
+    if (payload.brandId) {
+      const brand = await this.brandRepo.findOne(payload.brandId);
+      newProduct.brand = brand;
+    }
+    if (payload.categoriesIds) {
+      const categories = await this.categoryRepo.findByIds(
+        payload.categoriesIds,
+      );
+      newProduct.categories = categories;
+    }
     try {
       await this.productRepo.save(newProduct);
     } catch (err) {
@@ -41,6 +57,16 @@ export class ProductsService {
     const product = await this.productRepo.findOne(id);
     if (!product) {
       throw new NotFoundException(`Product #${id} not found`);
+    }
+    if (payload.brandId) {
+      const brand = await this.brandRepo.findOne(payload.brandId);
+      product.brand = brand;
+    }
+    if (payload.categoriesIds) {
+      const categories = await this.categoryRepo.findByIds(
+        payload.categoriesIds,
+      );
+      product.categories = categories;
     }
     this.productRepo.merge(product, payload); //Coje el producto y le añade los cambios
     return this.productRepo.save(product);
