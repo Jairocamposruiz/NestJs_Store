@@ -13,7 +13,8 @@ const API_KEY_PROD = 'PROD1234';
     TypeOrmModule.forRootAsync({
       inject: [config.KEY],
       useFactory: (configService: ConfigType<typeof config>) => {
-        const { user, host, dbName, password, port } = configService.postgres;
+        const { user, host, dbName, password, port } = configService.postgres; //type: 'postgres'
+        //const { user, host, dbName, password, port } = configService.mysql; //type: 'mysql'
         return {
           type: 'postgres',
           host,
@@ -22,7 +23,7 @@ const API_KEY_PROD = 'PROD1234';
           password,
           database: dbName,
           synchronize: true, //Solo puede ser true durante el desarrollo esto lo que hace es que si no existe tabla la cree
-          autoLoadEntities: true,
+          autoLoadEntities: true, //Solo puede ser true durante el desarrollo esto lo que hace es que si no existe tabla la cree
         };
       },
     }),
