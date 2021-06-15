@@ -1,17 +1,17 @@
 import {
   PrimaryGeneratedColumn,
   Entity,
-  UpdateDateColumn,
   CreateDateColumn,
+  UpdateDateColumn,
+  Column,
   ManyToOne,
-  OneToMany,
 } from 'typeorm';
 
-import { Customer } from './custormer.entity';
-import { OrderItem } from './order-item.entity';
+import { Order } from './order.entity';
+import { Product } from '../../products/entities/product.entity';
 
 @Entity()
-export class Order {
+export class OrderItem {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -27,9 +27,12 @@ export class Order {
   })
   updateAt: Date;
 
-  @ManyToOne(() => Customer, (customer) => customer.orders)
-  customer: Customer;
+  @Column({ type: 'int' })
+  quantity: number;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order)
-  items: OrderItem[];
+  @ManyToOne(() => Order, (order) => order.items)
+  order: Order;
+
+  @ManyToOne(() => Product)
+  product: Product;
 }

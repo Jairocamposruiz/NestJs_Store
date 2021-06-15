@@ -336,7 +336,7 @@ export class ProductsService {
 
 ## MIGRACIONES
 
-### ***GENERAR MIGRACIONES***
+### **_GENERAR MIGRACIONES_**
 
 Las migraciones son una manera de controlar los cambios hacia la base de datos, hasta la fecha hemos estado trabajando con el parámetro ` synchronize: true` en el modulo de database, esto se puede hacer cuando estamos creando un proyecto por que no tenemos datos en la base de datos que podamos borrar o contaminar puesto que este parámetro lo que consigue es que los cambios que realicemos en nuestras entities se le transmitan a la base de datos pudiendo llegar a borrar columnas de las tablas existentes.
 
@@ -401,7 +401,7 @@ export class init1623680390527 implements MigrationInterface {
 }
 ```
 
-### ***EJECUTAR MIGRACIONES***
+### **_EJECUTAR MIGRACIONES_**
 
 Para ello tendremos que generar nuevos scripts en nuestro package.json:
 
@@ -461,14 +461,21 @@ Con typeOrm también se pueden manejar estas relaciones desde los entities.
 
 - Un ejemplo de Uno a Uno:
 
-    Lo tenemos entre los entities customer y user. En estos entities se hace referencia de uno al otro y vicebersa pero el decorador JoinColumn solo lo tiene uno de ellos que donde se guardará la referencia en la base de datos.
-    Tambien tenemos que modificar los el service de la clase con el JoinColumn y su dto para añadir este campo a la hora de la creación y para añadir unos parametros a la busque y que al mostrar los elemento los muestre con las relaciones si es que las queremos de esta manera.
+  Lo tenemos entre los entities customer y user. En estos entities se hace referencia de uno al otro y vicebersa pero el decorador JoinColumn solo lo tiene uno de ellos que donde se guardará la referencia en la base de datos.
+  Tambien tenemos que modificar los el service de la clase con el JoinColumn y su dto para añadir este campo a la hora de la creación y para añadir unos parametros a la busque y que al mostrar los elemento los muestre con las relaciones si es que las queremos de esta manera.
 
 - Ejemplo de Uno a Muchos:
 
-    Lo tenemos entre los entities de brand y product, puesto que un producto solo tiene una marca pero una marca tiene muchos productos. En este caso no necesitamos el JoinColumn puesto que el se lo añade solo a la que tiene la propiedad ManyToOne que en este caso es product.
+  Lo tenemos entre los entities de brand y product, puesto que un producto solo tiene una marca pero una marca tiene muchos productos. En este caso no necesitamos el JoinColumn puesto que el se lo añade solo a la que tiene la propiedad ManyToOne que en este caso es product.
 
 - Ejemplo de Muchos a Muchos:
 
-    Lo tenemos entre los entities de product y category, puesto que en una categoria hay muchos productos y un producto puede tener varias categorias.
-    Como esto en las bases de datos no se puede hacer directamente lo que se suele hacer es crear una tercera tabla que hace de intermediaria entre ambos.Esta tabla la crea TypeOrm automaticamente gracias al decorator ManyToMany y al decorador JoinTable este decorador solo irá puesto en un lado de la relación pero no importa mucho en que lado valla.
+  Lo tenemos entre los entities de product y category, puesto que en una categoria hay muchos productos y un producto puede tener varias categorias.
+  Como esto en las bases de datos no se puede hacer directamente lo que se suele hacer es crear una tercera tabla que hace de intermediaria entre ambos.Esta tabla la crea TypeOrm automaticamente gracias al decorator ManyToMany y al decorador JoinTable este decorador solo irá puesto en un lado de la relación pero no importa mucho en que lado valla.
+
+Cuando hacemos una relación muchos a mucho se genera una tabla relacional la cual no tendrán un entiti que se refiera a ella directamente por lo tanto en caso de querer manipular los datos que figuran en la misma tenemos que recurrir a funciones como estas:
+
+- removeCategoryByProduct del product service
+- addCategoryToProduct del product service
+
+Otro ejemplo de relación de Muchos a Muchos puede ser la que tienen productos con orden de compra donde muchos productos pueden pertenecer a una orden de compra y muchas ordenes de compra pueden tener un mismo producto, solo que esta hay que añadirle un extra de dificultad en el cual hay que añadir que también tendría un campo de cantidades de cada producto por ello este tipo de relación no te la puede hacer automaticamente typeOrm y para ello tendremos que crear una entidad la cual funcionará de tabla relacional con los campos que necesitemos y tando las ordenes como los productos estarán relacionadas con esta tabla. En este caso a dicha entidad que maneja la tabla relacional la hemos llamado OrderItem puesto que contendrá toda la información de los cada item que se guarde en la orden y la info de los productos.
