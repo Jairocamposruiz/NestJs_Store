@@ -479,3 +479,163 @@ Cuando hacemos una relación muchos a mucho se genera una tabla relacional la cu
 - addCategoryToProduct del product service
 
 Otro ejemplo de relación de Muchos a Muchos puede ser la que tienen productos con orden de compra donde muchos productos pueden pertenecer a una orden de compra y muchas ordenes de compra pueden tener un mismo producto, solo que esta hay que añadirle un extra de dificultad en el cual hay que añadir que también tendría un campo de cantidades de cada producto por ello este tipo de relación no te la puede hacer automaticamente typeOrm y para ello tendremos que crear una entidad la cual funcionará de tabla relacional con los campos que necesitemos y tando las ordenes como los productos estarán relacionadas con esta tabla. En este caso a dicha entidad que maneja la tabla relacional la hemos llamado OrderItem puesto que contendrá toda la información de los cada item que se guarde en la orden y la info de los productos.
+
+## PAGINACIÓN (CON QUERY PARAMS)
+
+Para paginación o otrot tipo de query params será tan faci como añadir en nuestros controller los parametros Query para recojer los datos que se le manden, Crearemos un dto para que valide los datos que le llegan y en la función del service se le pasarán dichos valores de la siguiente manera:
+
+Ejemplo en Products:
+
+Dto
+
+```TypeScript
+export class FilterProductsDto {
+  @ApiProperty()
+  @IsOptional()
+  @IsPositive()
+  readonly limit: number; //Numero de productos que queremos
+
+  @ApiProperty()
+  @IsOptional()
+  @Min(0)
+  readonly offset: number; //Apartir de que posición
+}
+```
+
+Controller
+
+```TypeScript
+@Get()
+  findAll(@Query() queryParams: FilterProductsDto) {
+    return this.productService.findAll(queryParams);
+  }
+```
+
+Service
+
+```TypeScript
+findAll(queryParams?: FilterProductsDto) {
+    if (queryParams) {
+      const { limit, offset } = queryParams;
+      return this.productRepo.find({
+        relations: ['brand', 'categories'],
+        take: limit,
+        skip: offset,
+      });
+    }
+    return this.productRepo.find({ relations: ['brand', 'categories'] });
+  }
+```
+
+Como en este caso los query params que pedimos son number y todo lo que llega por la url viene como string, se podría hacer con el ParseIntPipe que no podríamos aplicar el dto en el controller. Entonces lo que se hace es añadir una propiedad en el main.ts dicha propiedad se llama transformOptions y se le pasa un objeto con los parametros que deseemos:
+
+```TypeScript
+app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+```
+
+Esto lo que consigue es que todos los queryParams que contenga numero los transformará automaticamente a numero.
+
+TypeOrm permite otras muchas opciones de busqueda aquí puedes ver su [Documentacion](https://orkhan.gitbook.io/typeorm/docs/find-options)
+
+## INDEXACIÓN PARA OPTIMIZAR BUSQUEDAS
+
+TypeOrm nos da la posivilidad de Indexar algunos parametros de nuestros entities para optimizar busquedas con dicho parámetro ejemplo en una base de datos de producto optimizariamos los precios para hacer busquedas por un rango de precio esto se puede hacer solo en algún que otro parametro de nada sirve que los indexemos todos.
+
+La diferencia en velocidad de búsqueda se nota cuando tenemos muchos datos en las tablas en un pricipo o con pruebas no notaremos nada pero hay que recordar que las podemos crear o modificar cuando esté el proyecto funcionando y tenga ya muchos datos en las tablas con tan solo realizar una migración.
+
+Para ello tenemos que añadirle el decorador @Index() por defecto todos los id que son la llave primaria siempre están indexados en la bases de datos ya que es el parametro por el que más se suele buscar.
+
+De esta manera se suele hacer cuando es solo un parametro:
+
+```TypeScript
+@Index()
+@Column({ type: 'int' })
+price: number;
+```
+
+O de esta si son varios parametros se pone encima de la clase:
+
+```TypeScript
+@Entity()
+@Index(['price', 'stock'])
+export class Product {
+```
+
+Hay que recordar que siempre que le hagamos una modificación a un entity debemos hacer una mirgración para que dichos cambios se efectúen en la base de datos también.
+
+## MODIFICANDO EL NAMING DE LA BASE DE DATOS
+
+Como buena practica en las bases de datos no se utilizan ni caracteres ni mayusculas esto choca con las buenas practicas de JavaScript donde escribimos en cameCase entonces variables como createAt en la tabla se copian tal cual y esto es una mala practica.
+
+Buenas practicas en bases de datos:
+
+- Nombres de las tablas en plural las cuales serían nuestras clases que siempre escribimos en singular. Este se modificaría de la siguiente manera:
+
+  ```TypeScript
+  @Entity({ name: 'products' })
+  @Index(['price', 'stock'])
+  export class Product {
+  ```
+
+- Escritura en snake_case cuando en javaScript es camelCase.
+
+  ````TypeScript
+  @CreateDateColumn({
+    name: 'create_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createAt: Date;
+  ```
+
+- Relaciones Uno a Uno si no las modificamos queda como nombreId cuando tiene que quedar nombre_id para ellos nos vamos a la tambla que tiene el JoinColumn:
+
+  ```TypeScript
+  @OneToOne(() => Customer, (customer) => customer.user, { nullable: true })
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
+  ```
+
+- Relaciones Uno a Muchos lo resolvemos en la que tiene el decorador ManyToOne añadiendo un decorador @JoinColumn:
+
+  ```TypeScript
+  @ManyToOne(() => Brand, (brand) => brand.products)
+  @JoinColumn({ name: 'brand_id' })
+  brand: Brand;
+  ```
+
+- Relaciones Muchos a Muchos si son las que creamos nosotros se modificarían como lo visto anteriormente pero si son las generadas automáticamente por TypeOrm ejemplo la que hay entre Categories y Products esta tendria un poco mas de trabajo tendremos que ir a donde pusimos el decorador @JoinTable y hay podremos nombrar:
+  
+  ```TypeScript
+  @ManyToMany(() => Category, (category) => category.products)
+  @JoinTable({
+    name: 'products_categories', //Nombre de tabla terniaria
+    joinColumn: {
+      name: 'product_id', //Nombre del campo que hace referencia a esta clase
+    },
+    inverseJoinColumn: {
+      name: 'category_id', //Nombre del campo que hace referencia a la otra clase
+    },
+  })
+  categories: Category[];
+  ```
+
+Esto es buena practica hacerlo antes de que la base de datos salga a producción puesto que cuando se cambián los nombre de las tablas o bases de datos en realidad por debajo no cambia nombre si no que borra y crea una nueva con dicho nombre por ello esto no se puede hacer en una base de datos que ya tenga los datos de usuarios etc... puesto que lo perderíamos todo.
+
+Es más para que esto a futuro no de errores e mejor hacer un Drop a la base de datos para eliminarlo todo y que de esta manera se cree bien desde cero si nó tendremos tablas en las que se le hallan borrado unos datos y otros no y podría ser una fuente de problemas con datos null, esto podemos hacerlo mientras construimos puesto que los datos que usamos en prueba son dummy.
+
+Ejecutaríamos:
+
+```Bash
+npm run migrations:drop
+npm run migrations:generate -- init
+npm run migrations:run
+```

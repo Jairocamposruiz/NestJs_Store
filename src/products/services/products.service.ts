@@ -4,12 +4,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, FindConditions } from 'typeorm';
 
 import { Category } from '../entities/category.entity';
 import { Brand } from '../entities/brand.entity';
 import { Product } from '../entities/product.entity';
-import { CreateProductDto, UpdateProductDto } from '../dtos/products.dtos';
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  FilterProductsDto,
+} from '../dtos/products.dtos';
 
 @Injectable()
 export class ProductsService {
@@ -19,7 +23,20 @@ export class ProductsService {
     @InjectRepository(Brand) private brandRepo: Repository<Brand>,
   ) {}
 
-  findAll() {
+  findAll(queryParams?: FilterProductsDto) {
+    if (queryParams) {
+      const where: FindConditions<Product> = {};
+      const { limit, offset, maxPrice, minPrice } = queryParams;
+      if (maxPrice && minPrice) {
+        where.price = Between(minPrice, maxPrice);
+      }
+      return this.productRepo.find({
+        relations: ['brand', 'categories'],
+        where,
+        take: limit,
+        skip: offset,
+      });
+    }
     return this.productRepo.find({ relations: ['brand', 'categories'] });
   }
 
