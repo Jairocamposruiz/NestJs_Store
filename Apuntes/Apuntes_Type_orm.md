@@ -639,3 +639,133 @@ npm run migrations:drop
 npm run migrations:generate -- init
 npm run migrations:run
 ```
+
+## SERIALIZAR
+
+Esta es una tecnica que se utiliza en casi todas las APIs lo que se hace con esta tecnica es transformar la información antes de que nuestro controlador la retorne en algunas ocasiones añadiendo información extra en otras quitando información.
+
+Para activar esta tecnica tenemos que ir a nuestro main.ts e importar:
+
+```TypeScript
+import { ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+```
+
+La activaremos:
+
+```TypeScript
+//Interceptor para serialización
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+```
+
+Ejemplo no queremos que nos devuelvan el createAt y el updateAt, o el password.
+
+Tendríamos que ir al entity en este caso para el ejemplo el order-item.entity.ts e importar:
+
+```TypeScript
+import { Exclude } from 'class-transformer';
+```
+
+Para usarlo es un decorador que se pone en los parametro que queremos excluir en la respuesta:
+
+```TypeScript
+@Exclude()
+@CreateDateColumn({
+  name: 'create_at',
+  type: 'timestamptz',
+  default: () => 'CURRENT_TIMESTAMP',
+})
+createAt: Date;
+
+@Exclude()
+@UpdateDateColumn({
+  name: 'update_at',
+  type: 'timestamptz',
+  default: () => 'CURRENT_TIMESTAMP',
+})
+updateAt: Date;
+```
+
+De esta manera estos datos los tendremos en nuestra base de datos para nuestro uso pero no los devolveremos.
+
+Ahora vamos a añadir información extra también por medio de serialización por ejemplo en nustro getOrder nos devuelve la información de esta manera:
+
+```Json
+{
+  "id": 4,
+  "items": [
+    {
+      "id": 8,
+      "quantity": 25,
+      "product": {
+        "id": 2,
+        "name": "Producto B",
+        "description": "lorem lorem lorem",
+        "price": 500,
+        "stock": 100,
+        "image": "https://i.imgur.com/U4iGx1j.jpeg"
+      }
+    }
+  ],
+  "customer": {
+    "id": 2,
+    "name": "Customer B",
+    "lastName": "Molina",
+    "phone": "+1 213 373 4253"
+  }
+}
+```
+
+Y queremos modificar para que items se combierta en un array de productos, la cantidad venga dentro del producto y el id del item no lo necesitamos para ello en el entity de Order importar lo siguiente:
+
+```TypeScript
+import { Exclude, Expose } from 'class-transformer';
+```
+
+El expose funciona con un campo nuevo que crearemos que funciona a manera de get:
+
+```TypeScript
+@Exclude()
+@OneToMany(() => OrderItem, (orderItem) => orderItem.order)
+items: OrderItem[];
+
+@Expose()
+get products() {
+  if (this.items) {
+    return this.items
+      .filter((item) => !!item)//Es igual que filter((item) => item !== null && item !== undefined)
+      .map((item) => ({
+        ...item.product,
+        quantity: item.quantity,
+      }));
+  }
+  return [];
+}
+```
+
+Con estas modificaciones nos lo devolvería:
+
+```TypeScript
+{
+  "id": 4,
+  "customer": {
+    "id": 2,
+    "name": "Customer B",
+    "lastName": "Molina",
+    "phone": "+1 213 373 4253"
+  },
+  "products": [
+    {
+      "id": 2,
+      "name": "Producto B",
+      "description": "lorem lorem lorem",
+      "price": 500,
+      "stock": 100,
+      "image": "https://i.imgur.com/U4iGx1j.jpeg",
+      "createAt": "2021-06-16T15:55:11.338Z",
+      "updateAt": "2021-06-16T15:55:11.338Z",
+      "quantity": 25
+    }
+  ]
+}
+```

@@ -10,6 +10,7 @@ import {
 
 import { User } from './user.entity';
 import { Order } from './order.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'customers' })
 export class Customer {
@@ -25,6 +26,7 @@ export class Customer {
   @Column({ type: 'varchar', length: 100 })
   phone: string;
 
+  @Exclude()
   @CreateDateColumn({
     name: 'create_at',
     type: 'timestamptz',
@@ -32,6 +34,7 @@ export class Customer {
   })
   createAt: Date;
 
+  @Exclude()
   @UpdateDateColumn({
     name: 'update_at',
     type: 'timestamptz',
