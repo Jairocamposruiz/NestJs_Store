@@ -37,3 +37,4 @@ lerna-debug.log*
 
 /postgres_data
 /mysql_data
+/mongo_data
