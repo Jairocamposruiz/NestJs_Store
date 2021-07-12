@@ -6,12 +6,17 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { MongoIdPipe } from '../../common/mongo-id.pipe';
 import { ProductsService } from '../services/products.service';
-import { CreateProductDto, UpdateProductDto } from '../dtos/products.dtos';
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  FilterProductsDto,
+} from '../dtos/products.dtos';
 
 @ApiTags('products')
 @Controller('products')
@@ -19,8 +24,8 @@ export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
 
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(@Query() params: FilterProductsDto) {
+    return this.productService.findAll(params);
   }
 
   @Get('/:id')
