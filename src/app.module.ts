@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
 
 import { environments } from './environments';
+import { AuthModule } from './auth/auth.module';
 import configSchema from './configSchema';
 import config from './config';
 
@@ -22,6 +23,7 @@ import config from './config';
     ProductsModule,
     UsersModule,
     DatabaseModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
