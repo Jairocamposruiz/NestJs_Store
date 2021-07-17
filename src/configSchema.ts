@@ -14,6 +14,8 @@ const configSchema = Joi.object({
   MYSQL_ROOT_PASSWORD: Joi.string().required(),
   MYSQL_PORT: Joi.number().port().required(),
   MYSQL_HOST: Joi.string().hostname().required(),
+  JWT_SECRET: Joi.string().required(),
+  JWT_EXPIRATION: Joi.string().required(),
 });
 
 export default configSchema;

@@ -21,5 +21,9 @@ export default registerAs('config', () => {
       host: process.env.MYSQL_HOST,
     },
     apiKey: process.env.API_KEY,
+    JWT: {
+      secret: process.env.JWT_SECRET,
+      expiration: process.env.JWT_EXPIRATION,
+    },
   };
 });
